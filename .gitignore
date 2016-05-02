@@ -2,6 +2,9 @@
 .Rhistory
 .Rapp.history
 
+# BACKUP files
+.RBACKUP
+
 # Emacs temp files
 *~
 [#]*[#]
