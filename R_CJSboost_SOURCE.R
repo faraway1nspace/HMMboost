@@ -486,7 +486,7 @@ cjsboost <-function(formula, # named list of R formula's (response not necessary
         ret[nrow(ret),(frst[length(frst)]+1):T] <- x[(wfirst[length(wfirst)]+1):length(x)]
         return(ret)
     },frst=first, frst.long=first.mask.long, nrowch=nrowch,T=T)
-    res <- list(formula=formula, learnernames=learnernames, nu=nu, mstop=mstop, ens = ens, m_estw=m_estw, xselect=xselect,fit=fit.matrix, qfunc=mqfunc, risk=mrisk, offsets=offsets, bestm = which.min(mrisk),id=id,summary=summary_, add.intercept=add.intercept, allblg=NULL, bl=bl, time.scaling=time.scaling, timefactor.levels=timefactor.levels)
+    res <- list(formula=formula, learnernames=learnernames, nu=nu, mstop=mstop, ens = ens, m_estw=m_estw, xselect=xselect, fit=fit.matrix, qfunc=mqfunc, risk=mrisk, offsets=offsets, bestm = which.min(mrisk),id=id,summary=summary_, add.intercept=add.intercept, allblg=NULL, bl=bl, time.scaling=time.scaling, timefactor.levels=timefactor.levels)
     if(return_blg){ # for CV; option to return prior defined baselearners
         res$allblg=allblg
     }
@@ -680,7 +680,8 @@ cjsboost_cvrisk <- function(            #
 # stabilsel: named list, with an entry for each parameters; each entry is a matrix showing each covariates stability select path over mstop iterations. The mean of the stability selection probabilities, for each covariate, would be an approximate posterio inclusion probability
 #
 
-cjsboost_hyperparam <- function(            #]
+# optimize nu and m: convex non-differentiable minimization algorithm, based on stepping in and stepping out rapidly... r
+cjsboost_hyperparam <- function(
     formula, # named list of R formula's (response not necessary)
     ch.data,  # matrix for WIDE format capture-recapture
     cov.data.wide=NULL,  # data.frame WIDE format for individual level covariates
@@ -731,29 +732,43 @@ cjsboost_hyperparam <- function(            #]
     cvres[[1]]<-c(nu.s = nu.cur$s, nu.p = nu.cur$p, nu.ratio = cur.nu.ratio, bestm = bestm, cvrisk = mean(cvmod$cvrisk[round(cvmod$bestm$median),]))
     cvmods[[length(cvmods)+1]] <- cvmod # store the cross-validation model for later
     # next nu to search
-    next.nu.ratio <-nu.ratio*c(0.5,2)
+    next.nu.ratio <-nu.ratio*c(2)
     # loop through the search proceedure
-    while(nu_search_steps >0){ 
-        for(subi in 1:length(next.nu.ratio)){
-            cur.nu.ratio <- next.nu.ratio[subi] # update the nu-ratio
-            cur.p = uniroot(function(x,nu.mu,nu.ratio){ (mean(c(x,x/nu.ratio))-nu.mu)},nu.mu=nu.mean,nu.ratio=cur.nu.ratio,interval=c(0.00000001,1))$root
-            nu.cur <- list(s=cur.p/cur.nu.ratio, p = cur.p)            
-            # run next cv
-            cvmod <- cjsboost_cvrisk(formula=formula, ch.data=ch.data, cov.data.wide=cov.data.wide, cov.data.array=cov.data.array, mstop = mstop, m_estw=m_estw, nu=nu.cur, offsets=offsets, add.intercept=add.intercept, id = id, allblg=basemod$allblg, time.spacing=NULL,N_bootstrap=length(bootstrap_weights), mc.cores=mc.cores, rerun_failures=rerun_failures, bootstrap_weights=bootstrap_weights, bootstrap_method=bootstrap_method, oobfraction=oobfraction, best_mstop_mean_trim = best_mstop_mean_trim, plot=FALSE)             
-            bestm = round(cvmod$bestm$median) # best m (mean is likely unreliable)
-            if(bestm >= (mstop-1)){ print(paste0("warning: best-m at ",bestm," has hit the boundary 'mstop'=",mstop,". Results may be unreliable. Please restart and supply a larger mstop, or larger initial values for nu")) }
-            cvres[[length(cvres)+1]] = c(nu.s = nu.cur$s, nu.p = nu.cur$p, nu.ratio = cur.nu.ratio, bestm = bestm, cvrisk = mean(cvmod$cvrisk[bestm,]))
-            cvmods[[length(cvmods)+1]] <- cvmod
-        }
-        cvres = cvres[order(unlist(lapply(cvres,function(x) x[["nu.ratio"]])))]
-        cvmods <- cvmods[order(unlist(lapply(cvres,function(x) x[["nu.ratio"]])))]
-                                        # find next best nu
-        bestcv.cur = min(do.call("rbind",cvres)[,"cvrisk"]); bestcv.cur.ix = which.min(do.call("rbind",cvres)[,"cvrisk"])
-        range.ratio.cur = range(do.call("rbind",cvres)[,"nu.ratio"])
+    while(nu_search_steps >0){
+        cur.nu.ratio <- next.nu.ratio
+        cur.p = uniroot(function(x,nu.mu,nu.ratio){ (mean(c(x,x/nu.ratio))-nu.mu)},nu.mu=nu.mean,nu.ratio=cur.nu.ratio,interval=c(0.00000001,1))$root
+        nu.cur <- list(s=cur.p/cur.nu.ratio, p = cur.p)            
+        # run next cv
+        cvmod <- cjsboost_cvrisk(formula=formula, ch.data=ch.data, cov.data.wide=cov.data.wide, cov.data.array=cov.data.array, mstop = mstop, m_estw=m_estw, nu=nu.cur, offsets=offsets, add.intercept=add.intercept, id = id, allblg=basemod$allblg, time.spacing=NULL,N_bootstrap=length(bootstrap_weights), mc.cores=mc.cores, rerun_failures=rerun_failures, bootstrap_weights=bootstrap_weights, bootstrap_method=bootstrap_method, oobfraction=oobfraction, best_mstop_mean_trim = best_mstop_mean_trim, plot=FALSE)             
+        bestm = round(cvmod$bestm$median) # best m (mean is likely unreliable)
+        if(bestm >= (mstop-1)){ print(paste0("warning: best-m at ",bestm," has hit the boundary 'mstop'=",mstop,". Results may be unreliable. Please restart and supply a larger mstop, or larger initial values for nu")) }
+        cvres[[length(cvres)+1]] = c(nu.s = nu.cur$s, nu.p = nu.cur$p, nu.ratio = cur.nu.ratio, bestm = bestm, cvrisk = mean(cvmod$cvrisk[bestm,]))
+        cvmods[[length(cvmods)+1]] <- cvmod
+        # reorder the results
+        nuratio.set = unlist(lapply(cvres,function(x) x[["nu.ratio"]]))
+        cvres = cvres[order(nuratio.set)] # reorder
+        cvmods <- cvmods[order(nuratio.set)] # reorder
+        cvrisk.set = unlist(lapply(cvres,function(x) x[["cvrisk"]]))
+        nuratio.set = unlist(lapply(cvres,function(x) x[["nu.ratio"]]))
+        # find next best nu
+        bestcv.cur = min(cvrisk.set); bestcv.cur.ix = which.min(cvrisk.set)
+        # boundarys of best nu
+        range.ratio.cur = range(nuratio.set)
+        # check if best nu.ratio is on a boundary: if so, double or 1/2 the best nu.ratio
         if(any(cvres[[bestcv.cur.ix]][["nu.ratio"]] == range.ratio.cur)){ # test if the ratio is on a boundary
             next.nu.ratio = cvres[[bestcv.cur.ix]][["nu.ratio"]]*( 2^(cvres[[bestcv.cur.ix]][["nu.ratio"]] == max(range.ratio.cur))*0.5^(cvres[[bestcv.cur.ix]][["nu.ratio"]] == min(range.ratio.cur)) ) # double or half nu.p, if it is on a boundary
-        } else { # else, best nu is caught inbetween two run: take average
-            next.nu.ratio = 0.5* cvres[[bestcv.cur.ix]][["nu.ratio"]] + 0.5*(do.call("rbind",cvres)[bestcv.cur.ix+c(-1,1),"nu.ratio"][which.min(do.call("rbind",cvres)[bestcv.cur.ix+c(-1,1),"cvrisk"])]) # weight inbetween neighbours with lowest risk
+        } else { # else, best nu is caught inbetween two run: interpolate
+            # triplet: best nu, one step back and one step ahead
+            min.triplet.ix <- (bestcv.cur.ix+c(-1,0,1))[order(cvrisk.set[bestcv.cur.ix+c(-1,0,1)])]
+            # if the two minimum CVrisks have a big gap between them, then divide and set new nu as their midpoint
+            if(abs(diff(nuratio.set[min.triplet.ix[1:2]])) >=  abs(diff(nuratio.set[min.triplet.ix[c(1,3)]]))){
+                step = 1/2 * abs(diff(nuratio.set[min.triplet.ix[1:2]]))
+                dir = sign(diff(nuratio.set[min.triplet.ix[1:2]]))
+            } else { # if the space between the 1st and 3rd nu is bigger, divide and set new nu as their midpoint
+                step = 1/2 * abs(diff(nuratio.set[min.triplet.ix[c(1,3)]]))
+                dir = sign(diff(nuratio.set[min.triplet.ix[c(1,3)]]))
+            }
+            next.nu.ratio <- cvres[[bestcv.cur.ix]][["nu.ratio"]]+dir*step
         }
         nu_search_steps = nu_search_steps-1
     }
@@ -768,7 +783,8 @@ cjsboost_hyperparam <- function(            #]
         cvmod <- c(cvmod, list(optimal.nu = nu, nu.optimization.summary=do.call("rbind",cvres)))
         return(cvmod)
     }
-} # DONE cjsboost_hyperpar function
+} # DONE cjsboost_hyperpar2 function
+
 
 ##############################################################################
 # stochastic gradient descent:
@@ -779,7 +795,7 @@ cjsboost.stochastic <-function(formula, # named list of R formula's (response no
                     mstop = 3000, # stopping criteria, either single integer (for all components) or named list for different criteria per component (named the same as in formula)
                     m_estw=20,# how many draws of the posterior to do before updating FIT and recalculating
                     nu=lapply(formula,function(x){r<-0.001; r}), # named list of the shrinkage rate, for different shrinkage per component (named the same as in formula)
-                    offsets=NULL, # named list of start values per component (named the same as in formula
+                    offsets=NA, # named list of start values per component (named the same as in formula
                     weights=1, # weights should be nrow=nrow(ch.data)
                     oobag_risk = FALSE, # estimate risk descent as empirical risk (FALSE) or out-of-bag risk (TRUE); default is FALSE; generally only used in the cvrisk routine
                     id = NULL, # optional vector of IDs to identify rows in data with ch data
@@ -905,19 +921,20 @@ cjsboost.stochastic <-function(formula, # named list of R formula's (response no
     } # boosting m
     summary_ <- lapply(xselect,table) # lapply(fit,function(x) inv.logit(unique(x)))u
     for(cp in 1:totalcomps){names(summary_[[cp]])<-learnernames[[cp]][as.numeric(names(summary_[[cp]]))]}
-    # make the fit vector into a matrix (for easy comparisons, later)
-        fit.matrix <- lapply(fit, function(x, frst,frst.long,nrowch,T){ ret=matrix(NA,nrowch,T)
+    # return the fit vector as a matrix (padded with NA's for pre-first capture)
+    fit.matrix <- lapply(fit, function(x, frst,frst.long,nrowch,T){ ret=matrix(NA,nrowch,T)
         wfirst = which(first.mask.long==1);
         for(i in 1:(length(wfirst)-1)){  ret[i,(frst[i]+1):T]<- x[(wfirst[i]+1):(wfirst[i+1]-1)] }
         ret[nrow(ret),(frst[length(frst)]+1):T] <- x[(wfirst[length(wfirst)]+1):length(x)]
         return(ret)
-    },frst=first, frst.long=first.mask.long, nrowch=nrowch,T=T)        
+    },frst=first, frst.long=first.mask.long, nrowch=nrowch,T=T)
     res <- list(formula=formula, learnernames=learnernames, nu=nu, mstop=mstop, ens = ens, m_estw=m_estw, xselect=xselect, fit=fit.matrix, qfunc=mqfunc, risk=mrisk, offsets=offsets, bestm = which.min(mrisk),id=id,summary=summary_, add.intercept=add.intercept, allblg=NULL, bl=bl,time.scaling=time.scaling, timefactor.levels=timefactor.levels)
     if(return_blg){ # for CV; option to return prior defined baselearners
         res$allblg=allblg
     }
     return(res)
 } # end stochastic cjsboost
+
 
 cjsboost_cv_fit.stochastic <- function(X,formula,ch.data,mstop,m_estw,nu,offsets,add.intercept,id,allblg,oldother){
     cvmod=NULL

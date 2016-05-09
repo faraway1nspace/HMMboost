@@ -1,11 +1,5 @@
-# rsync -azr --progress /home/rob/Documents/school/Duke/machinelearn/HMMboost/* rob@134.115.238.47:/home/rob/Documents/school/Duke/machinelearn/HMMboost/
-# rsync -azr --progress /home/rob/Documents/school/Duke/machinelearn/markboost/*SOURCE.R rob@134.115.238.47:/home/rob/Documents/school/Duke/machinelearn/markboost/
-# rsync -azr --progress /home/rob/Documents/school/Duke/machinelearn/markboost/EM/R_CJSboost_SOURCE.R rob@134.115.238.47:/home/rob/Documents/school/Duke/machinelearn/markboost/EM/R_CJSboost_SOURCE.R
-# rsync -azr --progress rob@134.115.238.47:/home/rob/Documents/school/Duke/machinelearn/HMMboost/PLOT_* /home/rob/Documents/school/Duke/machinelearn/HMMboost/
-
 # Dipper analysis with CJSboosting (with trees, splines, and PLS base-learners) and compare to AICc model-averaging. This is example from Rankin 2016.
 
-setwd("~/Documents/school/Duke/machinelearn/HMMboost")
 library(Rcpp) # for C++ cjsboost functions
 library(RcppArmadillo) # for C++ cjsboost functions
 library(inline) # for C++ cjsboost functions
@@ -13,9 +7,8 @@ library(boot) # logit command
 library(mboost) # base-learners for boosting
 library(parallel) # need for parallel processing during the bootstrap-runs
 library(party) # (optional) conditional inference trees (for "boosted regression trees")
-#source("R_CJSboost_SOURCE.R") # import CJSBoost functions (may take several seconds)
-source("../markboost/EM/R_CJSboost_SOURCE.R") # import CJSBoost functions (may take several seconds)
-source("../markboost/R_simcjsdataset_SOURCE.R") # import stupid simulation functions ( optional)
+source("R_CJSboost_SOURCE.R") # import CJSBoost functions (may take several seconds)
+source("R_simcjsdataset_SOURCE.R") # import stupid simulation functions ( optional)
 
 
 # import the dipper data (from RMark and Lebreton ????)
@@ -172,7 +165,7 @@ plot(subset(preds.SPLINE,sex==0)[,c("period","p")],xlab="capture period",main="d
 plot(subset(preds.SPLINE,sex==1)[,c("period","p")],xlab="capture period",main="detection males (SPLINE)",ylab="capture prob",typ="b")
 
 ####################################################################################################
-# PART 2: CART-like conditional inference trees (algorithmic inference; like boosted regression trees)
+# PART 3: CART-like conditional inference trees (algorithmic inference; like boosted regression trees)
 # just ONE base-learner (per p,s): let the trees fit and variable select!
 form.name = "model.TREES" # name of model
 formu.TREES = list( # formula is a NAMED-LIST, with an R formula entry for 's' surival and 'p' capture prob
@@ -235,7 +228,6 @@ plot(subset(preds.TREES,sex==1)[,c("period","p")],xlab="capture period",main="de
 ####################################################################################
 # PART 4: COMPARE boosted estimates: PLS vs. Splines vs. Trees (visually)
 
-png(filename="PLOT_comparison1.png",width=700,height=700,pointsize=18)
 par(mfrow=c(2,2),bty="n");
 for(par_ in c("s","p")){
     for(sex_ in c(0,1)){
@@ -247,7 +239,6 @@ for(par_ in c("s","p")){
     } # sex
 } # parameter
 legend(x="bottomright",legend=c("boost-PLS","boost-Splines","boost-Trees"),col=c("orange","purple","green"),lwd=c(1,1,1),pch=c(1,6,18),bty="n")
-dev.off()
 
 
 ###########################################################################################
@@ -392,7 +383,6 @@ if( "RMark" %in% row.names(installed.packages())){ # check if YOU have RMark ins
     mle$period = ifelse(mle$parameter=="s",as.numeric(mle$time)+1,as.numeric(mle$time))
 
     # PLOT: compare AICc vs boost-PLS vs boost-Spline vs boost-Trees
-    png(filename="PLOT_comparison2.png",width=700,height=700,pointsize=18)
     par(mfrow=c(2,2),bty="n",mar=c(3.5,3.5,1,0),mgp=c(1.9,0.8,0));
     for(par_ in c("s","p")){
         for(sex_ in c(0,1)){
@@ -409,7 +399,6 @@ if( "RMark" %in% row.names(installed.packages())){ # check if YOU have RMark ins
         } # sex
     } # parameter
     legend(x="bottomright",legend=c("boost-PLS","boost-Splines","boost-Trees","model-averaged (AICc)",expression("MLE"~hat(phi)(t*scriptstyle(x)*"sex")*hat(p)(t*scriptstyle(x)*"sex"))),col=c("orange","purple","green","blue","black"),lwd=c(1,1,1,1,1),pch=c(1,1,1,18,19),bty="n")
-    dev.off()
 }
 # Done comparing CJSboost vs AIC vs MLE
 
@@ -482,7 +471,6 @@ print(coefs.fake[["p"]]) # uses fake1,2,3,4, but its effects are shrunk to <0.00
 # STABILITY SELECTION: lets see the selection probabilities of the fake covariates. Selection probabilities are the probability (per reulgarization parameter) that a covariate is selected by the algorithm. For univariate boosting, these have two uses: i) straight-forward inference in and of themselves (important covariates have high selection probabilities (>0.8-0.95), unimportant covariates have low selection probabilities (<0.8); ii) we can discard unimportant covariates and get a "model-selection consistent" estimator, finding a true "sparse" model (at least in univariate boosting).  See Meinhausen and Buhlmann (2008).
 # notice that NONE of the covariates have high selection probabilities for p, and only "Flood" for survival
 col_ <- c("interc"="grey","timefactor"="blue", "sex"="red","floods" = "orange","floodp" = "orange",fake1="grey",fake2="grey" ,fake3="grey" ,fake4="grey" ,fake5="grey")
-png(filename="PLOT_stabilityselection.png",width=700,height=700,pointsize=18)
 par(mfrow=c(2,1),bty="l",mar=c(3.5,3.5,1,0),mgp=c(1.9,0.8,0));
 for(cp_ in c("s","p")){
     # plot
@@ -496,7 +484,6 @@ for(cp_ in c("s","p")){
 }
 # add the legend
 legend(x="topright",legend=c("time","sex","flood","fake"), col=c("time"="blue","sex"="red","flood" = "orange","fake"="grey"), lwd=1,lty=1,bty="n",cex=0.8)
-dev.off()
 
 # Stability selection: calculate (Approximate) Posterior Inclusion Probabilties. We can use these posterior probabilities for straightforward inference
 inclusion.probs <- lapply(cv.fake.PLS$stabilsel, colMeans)
@@ -602,7 +589,6 @@ print(which(inclusion.probs[["p"]]>0.8)) # vs. sim$sig.effs[["p"]]
 # PLOT the regression cofficients (marginal values)
 true.betas <- sim$beta # true coefficients
 true.betas <- list(s = true.betas[["s"]][which(names(true.betas[["s"]])!="interc")], p =true.betas[["p"]][which(names(true.betas[["p"]])!="interc")]) # discard intercept
-png(filename="PLOT_highdim_coef.png",width=700,height=700,pointsize=18)
   par(mfrow=c(2,1),bty="l",mar=c(3.5,3.5,1.3,0),mgp=c(2.5,0.8,0));
   plot.coef.s <- unlist(lapply(coefs[["s"]][-1], function(x) x[which(row.names(x)!="(Intercept)"),]))
   plot.coef.p <- unlist(lapply(coefs[["p"]][-1], function(x) x[which(row.names(x)!="(Intercept)"),]))
@@ -611,10 +597,8 @@ png(filename="PLOT_highdim_coef.png",width=700,height=700,pointsize=18)
   legend(x="topleft",legend=c("true (simulated)","estimated"),fill=c("green","purple"),density=c(NA,20),cex=1.2,bty="n")
   barplot(true.betas[["p"]],las=2,col="green",xlab="covariates",ylab="coefficients' marginal values",main=expression(beta[p]~"Regression coefficients for"~p),xpd=FALSE);#box() # true values
   barplot(plot.coef.p,las=2,add=TRUE,names.arg="",col="purple",density=20) # true values
-dev.off()
 
 # PLOT compare the true processes vs. the estimated processes (each dot is an individual i at time t)
-png(filename="PLOT_highdim_processes.png",width=700,height=700,pointsize=18)
   par(mfrow=c(2,1),bty="l",mar=c(3.5,3.5,1,0),mgp=c(1.9,0.8,0));
   plot(sim$true.wide[["s"]],mod.highdim.PLS$fit[["s"]],xlab=expression("true"~phi[list(i,t)]),ylab=expression("estimated"~hat(phi)[list(i,t)]),main="compare individuals' estimated and true survival"); abline(0,1) # plot survival (true vs estimated)
   plot(sim$true.wide[["p"]],mod.highdim.PLS$fit[["p"]],xlab=expression("true"~p[list(i,t)]),ylab=expression("estimated"~hat(p)[list(i,t)]),main="compare individuals' estimated and true capture prob"); abline(0,1) # plot capture probability (true vs estimated)
@@ -635,7 +619,6 @@ png(filename="PLOT_highdim_stability_PLS.png",width=700,height=700,pointsize=18)
     }
     legend(x="topright",legend=c("unimportant","important","theta(t)"), col=c(1,2,3),lwd=1,lty=1,bty="n",cex=0.7,ncol=1)
   }
-dev.off()
 
 # calculate the (approximate) posterior inclusion probabilities
 
@@ -652,13 +635,13 @@ m_estw <- 2 # integer, how often to re-calculate the E-step? (1-3) smaller is mo
 mc.cores = 10 # number of threads for parallel processing; used in parallel::mcLapply
 cv.highdim.TREES <- cjsboost_hyperparam( formula=formu.highdim.TREES, ch.data=sim$ch.data, cov.data.wide=sim$cov.data.wide, cov.data.array=NULL, mstop = mstop.cv, m_estw=m_estw, nu.start=nu.start, nu_search_steps = 7, offsets=NA, add.intercept=TRUE, id = NULL, N_bootstrap=N_bootstrap, mc.cores=mc.cores, bootstrap_weights=bootstrap_weights, return_all_cv_models=FALSE)
 
+
 print(cv.highdim.TREES$nu.optimization.summary) # look at bestm, cvrisk. We want bestm and nu to optimize cvrisk
 # ... having optimized nu and mstop, run final TREES high-dim model
 bestm.TREES <- round(cv.highdim.TREES$bestm$median); bestnu.TREES <-  cv.highdim.TREES$optimal.nu # best nu
 mod.highdim.TREES <- cjsboost(formula=formu.highdim.TREES, ch.data=sim$ch.data, cov.data.wide=sim$cov.data.wide, cov.data.array=NULL, mstop = bestm.TREES, m_estw=m_estw, nu=bestnu.TREES, add.intercept=TRUE)
 
 # PLOT: TREES vs. PLS fits
-png(filename="PLOT_highdim_PLSvsTREES.png",width=700,height=700,pointsize=18)
   par(mfrow=c(2,1),bty="l",mar=c(3.5,3.5,1,0),mgp=c(1.9,0.8,0));
   # survival
   plot(sim$true.wide[["s"]],mod.highdim.PLS$fit[["s"]],xlab=expression("true"~phi[list(i,t)]),ylab=expression("estimated"~hat(phi)[list(i,t)]),main="compare PLS vs TREES (survival)",col="purple"); abline(0,1,lwd=2) # plot survival (true vs estimated)
@@ -673,11 +656,9 @@ png(filename="PLOT_highdim_PLSvsTREES.png",width=700,height=700,pointsize=18)
   abline(lm(tre~true,data=data.frame(true=as.numeric(sim$true.wide[["p"]]),tre=as.numeric(mod.highdim.TREES$fit[["p"]]))),col="orange",lty=2)
   legend(x="bottomright",bty="n",legend=c("PLS","Trees"),col=c("purple","orange"),pch=c(1,2))
 # add trendlines
-dev.off()
 
 # PLOT the stability selection pathways for the TREES model
 # plot the PLS stability selection pathways: which covariates have low stability selection <<0.8-0.95 are probably not that important
-png(filename="PLOT_highdim_stability_TREES.png",width=700,height=700,pointsize=18)
   par(mfrow=c(2,1),bty="l",mar=c(3.5,3.5,1,0),mgp=c(1.9,0.8,0));
   for(cp_ in c("s","p")){
     col_ <- rbind(interc=0,timefactor=3,sim$sig.effs[[cp_]]+1) # significiant ones in red, others in blue)
@@ -691,14 +672,13 @@ png(filename="PLOT_highdim_stability_TREES.png",width=700,height=700,pointsize=1
     }
     legend(x="topright",legend=c("unimportant","important","theta(t)"), col=c(1,2,3),lwd=1,lty=1,bty="n",cex=0.7,ncol=1)
   }
-dev.off()
 
 # DONE part 7
 
 ###############################################################################################################
 # PART 8: CJSboost-EM vs CJSboost-MC: strictly academic
 # this part won't be of much practical interest to anyone. This merely shows the similarity between estimates between the CJSboost-Expectation-Maximization Algorithm and the Monte-Carlo algorithm. The EM is faster, and what is recommended. But, the MC could be useful for other capture-recapture systems. It is a proof of concept.In this demonstration, we simulate a high-dimensional dataset. 
-# This assumes you have already run PART 8: highdimensional example with PLS
+# This assumes you have already run PART 7: highdimensional example with PLS
 # ... here, we won't re-optimize nu and mstop.... although if this were anything but a demonstration, you would. Because we already optimized nu and mstop for the CJSboost-EM PLS model in Part 7, this CJSboost-MC model should have the same regularization parameters
 
 m_estw.MC <- 20 # number of draws from posterior of z (to approximate the gradient)
@@ -708,10 +688,8 @@ mod.MonteCarlo <- cjsboost.stochastic(formula=formu.highdim.PLS, ch.data=sim$ch.
 # ... this obviously will take a lot longer... x20 longer. It takes such a long time because each boosting iteration now has x20 gradient estimates and x20 fitting base-learners to the gradient
 
 # Plot the CJSboost-EM results vs. the CJSboost-MC results (should be approx. the same).
-png(filename="PLOT_MCvsEM.png",width=700,height=700,pointsize=18)
   par(mfrow=c(2,1),bty="l",mar=c(3.5,3.5,1,0),mgp=c(1.9,0.8,0));
   # survival
   plot(mod.highdim.PLS$fit[["s"]],mod.MonteCarlo$fit[["s"]],xlab=expression("EM"~hat(phi)[list(i,t)]),ylab=expression("MC"~hat(phi)[list(i,t)]),main="EM vs MC (survival)",col="purple"); abline(0,1,lwd=2) # plot survival (EM vs MC)
   plot(mod.highdim.PLS$fit[["p"]],mod.MonteCarlo$fit[["p"]],xlab=expression("EM"~hat(p)[list(i,t)]),ylab=expression("MC"~hat(p)[list(i,t)]),main="EM vs MC (capture-prob)",col="purple"); abline(0,1,lwd=2) # plot capture-prob (EM vs MC)
-dev.off()
 # 

@@ -14,6 +14,7 @@ library(mboost) # base-learners for boosting
 library(parallel) # need for parallel processing during the bootstrap-runs
 library(party) # (optional) conditional inference trees (for "boosted regression trees")
 #source("R_CJSboost_SOURCE.R") # import CJSBoost functions (may take several seconds)
+#source("R_simcjsdataset_SOURCE.R") # import stupid simulation functions ( optional)
 source("../markboost/EM/R_CJSboost_SOURCE.R") # import CJSBoost functions (may take several seconds)
 source("../markboost/R_simcjsdataset_SOURCE.R") # import stupid simulation functions ( optional)
 
@@ -134,7 +135,7 @@ cv.SPLINE <- cjsboost_hyperparam( formula=formu.SPLINE, # named list of R formul
     mstop = mstop.cv, # stopping criteria, 
     m_estw=m_estw,# how often to perform E-step? (every m_estw'th of boosting iteratn)
     nu.start=nu.start, # named list of the shrinkage rate, for different shrinkage per component (named the same as in formula)
-    nu_search_steps = 2, # how many steps to take to find an optimal nu
+    nu_search_steps = 7, # how many steps to take to find an optimal nu
     offsets=NA, # named list of start values per component (named the same as in formula) NA = MLE of phi(dot)p(dot)
     add.intercept=TRUE, # option to automatically add an intercept variable called 'interc'
     id = NULL, # optional vector of IDs to identify rows in data with ch data 
@@ -172,7 +173,7 @@ plot(subset(preds.SPLINE,sex==0)[,c("period","p")],xlab="capture period",main="d
 plot(subset(preds.SPLINE,sex==1)[,c("period","p")],xlab="capture period",main="detection males (SPLINE)",ylab="capture prob",typ="b")
 
 ####################################################################################################
-# PART 2: CART-like conditional inference trees (algorithmic inference; like boosted regression trees)
+# PART 3: CART-like conditional inference trees (algorithmic inference; like boosted regression trees)
 # just ONE base-learner (per p,s): let the trees fit and variable select!
 form.name = "model.TREES" # name of model
 formu.TREES = list( # formula is a NAMED-LIST, with an R formula entry for 's' surival and 'p' capture prob
@@ -184,7 +185,7 @@ formu.TREES = list( # formula is a NAMED-LIST, with an R formula entry for 's' s
 # nu.start = list(s=0.2,p=0.1) # initial shrinkage rates (named list)
 nu.start = bestnu.PLS # CHEATING: using the estimating bestnu from PLS to initialize
 mstop.cv = 1000 # stopping iteration (should be overly generous)
-,m_estw <- 2 # integer, how often to re-calculate the E-step? (1-3) smaller is more computationally expensive
+m_estw <- 2 # integer, how often to re-calculate the E-step? (1-3) smaller is more computationally expensive
 
 # BOOTSTRAP-VALIDATION: for TREES baselearners
 cv.TREES <- cjsboost_hyperparam( formula=formu.TREES, # named list of R formula's (response not necessary)
@@ -194,7 +195,7 @@ cv.TREES <- cjsboost_hyperparam( formula=formu.TREES, # named list of R formula'
     mstop = mstop.cv, # stopping criteria, 
     m_estw=m_estw,# how often to perform E-step? (every m_estw'th of boosting iteratn)
     nu.start=nu.start, # named list of the shrinkage rate, for different shrinkage per component (named the same as in formula)
-    nu_search_steps = 2, # how many steps to take to find an optimal nu
+    nu_search_steps = 7, # how many steps to take to find an optimal nu
     offsets=NA, # named list of start values per component (named the same as in formula) NA = MLE of phi(dot)p(dot)
     add.intercept=TRUE, # option to automatically add an intercept variable called 'interc'
     id = NULL, # optional vector of IDs to identify rows in data with ch data 
@@ -464,7 +465,6 @@ cv.fake.PLS <- cjsboost_hyperparam( formula=formu.fake.PLS, # named list of R fo
     mc.cores=mc.cores, # package(parallel): parallelize the bootstrap runs, number of cores 
     bootstrap_weights=bootstrap_weights, # option to patch in your own weights,
     return_all_cv_models=FALSE) #  return ALL the cvmods (not a good idea); otherwise, just return the CV runs for the optimal nu (def
-
 print(cv.fake.PLS$nu.optimization.summary) # look at bestm, cvrisk. We want bestm and nu to optimize cvrisk
 
 bestm.fake.PLS <- round(cv.fake.PLS$bestm$median) # best m
@@ -518,7 +518,7 @@ if("RMark"%in%row.names(installed.packages())){
     fake.ddl.p <- merge(x=fake.ddl$p,y=cbind(time=1:7,fake.dat.array[1,,c("fake4","fake5")]),by="time")    
     fake.ddl$Phi <- fake.ddl.Phi[order(fake.ddl.Phi$model.index),]
     fake.ddl$p <- fake.ddl.p[order(fake.ddl.p$model.index),]    
-    mle.fake <- mark(data=fake.processed,ddl=fake.ddl,model="CJS",model.parameters=list(Phi=list(formula=~Flood*sex+fake1+fake2+fake3+fake4+fake5),p=list(formula=~Flood*sex+fake1+fake2+fake3+fake4+fake5)),delete=TRUE,retry=30)
+    mle.fake <- mark(data=fake.processed,ddl=fake.ddl,model="CJS",model.parameters=list(Phi=list(formula=~Flood*sex+fake1+fake2+fake3+fake4+fake5),p=list(formula=~Flood*sex+fake1+fake2+fake3+fake4+fake5)),delete=TRUE,retry=30,output=FALSE,invisible=TRUE,silent=TRUE)
     # poor convergence
     mle.fake$results$beta # incredibly high coefficients on FAKE covariates
     mle.fake$results$AICc # lower AICc than...  
@@ -652,6 +652,8 @@ mstop.cv = 2500 # stopping iteration (should be overly generous)
 m_estw <- 2 # integer, how often to re-calculate the E-step? (1-3) smaller is more computationally expensive
 mc.cores = 10 # number of threads for parallel processing; used in parallel::mcLapply
 cv.highdim.TREES <- cjsboost_hyperparam( formula=formu.highdim.TREES, ch.data=sim$ch.data, cov.data.wide=sim$cov.data.wide, cov.data.array=NULL, mstop = mstop.cv, m_estw=m_estw, nu.start=nu.start, nu_search_steps = 7, offsets=NA, add.intercept=TRUE, id = NULL, N_bootstrap=N_bootstrap, mc.cores=mc.cores, bootstrap_weights=bootstrap_weights, return_all_cv_models=FALSE)
+
+
 print(cv.highdim.TREES$nu.optimization.summary) # look at bestm, cvrisk. We want bestm and nu to optimize cvrisk
 # ... having optimized nu and mstop, run final TREES high-dim model
 bestm.TREES <- round(cv.highdim.TREES$bestm$median); bestnu.TREES <-  cv.highdim.TREES$optimal.nu # best nu
@@ -698,7 +700,7 @@ dev.off()
 ###############################################################################################################
 # PART 8: CJSboost-EM vs CJSboost-MC: strictly academic
 # this part won't be of much practical interest to anyone. This merely shows the similarity between estimates between the CJSboost-Expectation-Maximization Algorithm and the Monte-Carlo algorithm. The EM is faster, and what is recommended. But, the MC could be useful for other capture-recapture systems. It is a proof of concept.In this demonstration, we simulate a high-dimensional dataset. 
-# This assumes you have already run PART 8: highdimensional example with PLS
+# This assumes you have already run PART 7: highdimensional example with PLS
 # ... here, we won't re-optimize nu and mstop.... although if this were anything but a demonstration, you would. Because we already optimized nu and mstop for the CJSboost-EM PLS model in Part 7, this CJSboost-MC model should have the same regularization parameters
 
 m_estw.MC <- 20 # number of draws from posterior of z (to approximate the gradient)
