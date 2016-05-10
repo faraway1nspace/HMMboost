@@ -29,7 +29,7 @@ _Demonstration of selection probabilities for 30 high-dimensional simulations. A
 
 CJSboost uses a statistical learning technique called "boosting" for inference under a Cormack-Jolly-Seber (CJS) capture-recapture model. It iteratively builds an _ensemble_ of weak _base-learners_ to yield a strong prediction function. In univariate settings, it a powerful prediction technique (see [Schmid et al 2009](http://link.springer.com/article/10.1007/s11222-009-9162-7) for a good overview; [free pdf here](https://epub.ub.uni-muenchen.de/7788/1/TR.pdf)). The iterative weighting of base-learners can be thought of as a type of "multi-model inference", not-unlike model-averaging by AICc weights. Boosting and AIC model-averaging have some theorectical connections, both being motivated by predictive preformance and minimizing a loss criteria. However, unlike AIC model-averaging, boosting can incoporate highly flexible learners like "boosted regression trees" and random effects.
 
-Until now, boosting could only be used for univariate regression and classification tasks. The key contribution of the [Rankin manuscript](https://drive.google.com/open?id=0BxeoeRy1g2juWVl4Yk8yZ2J2V1E) is make boosting possible for time-series and capture-histories data, by embedding a Expectation-Maximization sub-algorithm within the boosting gradient descent. 
+Until now, boosting could only be used for univariate regression and classification tasks. The key contribution of the [Rankin 2016 manuscript](http://www.biorxiv.org/content/early/2016/05/09/052266) is make boosting possible for time-series and capture-histories data, by embedding a Expectation-Maximization sub-algorithm within the boosting gradient descent. 
 
 ## Benefits and Drawbacks
 
@@ -85,3 +85,22 @@ Notice that for the spline, we decompose the spline into its intercept, a linear
 ## Typical CJSboost analysis
 
 ### Part 1: 
+under construction
+
+Citating: Bibtex
+----------------
+
+If you modify or draw inspiration from my code, please cite R, mboost, and the [companion paper](http://www.biorxiv.org/content/early/2016/05/09/052266), as:
+
+> @article{Rankin052266,
+	author = {Rankin, Robert William},
+	title = {EM and component-wise boosting for Hidden Markov Models: a machine-learning approach to capture-recapture},
+	year = {2016},
+	doi = {10.1101/052266},
+	publisher = {Cold Spring Harbor Labs Journals},
+	abstract = {This study presents a new boosting method for capture-recapture models, routed in predictive-performance and machine-learning. The regularization algorithm combines Expectation-Maximization and boosting to yield a type of multimodel inference, including automatic variable selection and control of model complexity. By analyzing simulations and a real dataset, this study shows the qualitatively similar estimates between AICc model-averaging and boosted capture-recapture for the CJS model. I discuss a number of benefits of boosting for capture-recapture, including: i) ability to fit non-linear patterns (regression-trees, splines); ii) sparser, simpler models that are less prone to over-fitting, singularities or boundary-value estimates than conventional methods; iii) an inference paradigm that is routed in predictive-performance and free of p-values or 95\% confidence intervals; and v) estimates that are slightly biased, but are more stable over multiple realizations of the data. Finally, I discuss some philosophical considerations to help practitioners motivate the use of either prediction-optimal methods (AIC, boosting) or model-consistent methods. The boosted capture-recapture framework is highly extensible and could provide a rich, unified framework for addressing many topics in capture-recapture, such as spatial capture-recapture, individual heterogeneity, and non-linear effects.},
+	URL = {http://dx.doi.org/10.1101/052266},
+	eprint = {http://www.biorxiv.org/content/early/2016/05/09/052266.full.pdf},
+	journal = {bioRxiv}
+}
+
