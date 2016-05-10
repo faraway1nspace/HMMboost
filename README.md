@@ -45,8 +45,8 @@ Until now, boosting could only be used for univariate regression and classificat
 The main drawback of boosting is that it depends on regularization hyperparameters (`mstop`, `nu`) which constrain the model-complexity. These cannot be estimated by the data. Instead, one must use bootstrap or cross-validation to optimize them. Typically, one must perform about 7 or 10 seperate k-fold cross-validations, which may take hours on a modern computer. 
 
 # TUTORIAL
-Interested users should set-through the R code in the file `R_TUTORIAL_dipper.R`. The tutorial does the following:
-* Parts 1-4 analyses the Dipper dataset via Least-Squares, Splines and boosted regression trees.
+Interested users should step-through the R code in the file `R_TUTORIAL_dipper.R`. The tutorial addresses the following:
+* Parts 1-4 analyse the Dipper dataset via Least-Squares, Splines and Boosted Regression Trees.
 * Part 5 compares boosted estimates to AICc model-averaging (requires RMark)
 * Part 6 demonstrates CJSboost's ability to weed out unimportant variables, but adding a bunch of fake data to the dipper dataset
 * Part 7 is a high-dimensional example from the manuscript: it demonstrates CJSboost's ability to find a sparse true model out of 21 candidate covariates. It compares PLS base-learners and boosted-regression trees.
@@ -98,7 +98,6 @@ If you modify or draw inspiration from my code, please cite R, mboost, and the [
 	year = {2016},
 	doi = {10.1101/052266},
 	publisher = {Cold Spring Harbor Labs Journals},
-	abstract = {This study presents a new boosting method for capture-recapture models, routed in predictive-performance and machine-learning. The regularization algorithm combines Expectation-Maximization and boosting to yield a type of multimodel inference, including automatic variable selection and control of model complexity. By analyzing simulations and a real dataset, this study shows the qualitatively similar estimates between AICc model-averaging and boosted capture-recapture for the CJS model. I discuss a number of benefits of boosting for capture-recapture, including: i) ability to fit non-linear patterns (regression-trees, splines); ii) sparser, simpler models that are less prone to over-fitting, singularities or boundary-value estimates than conventional methods; iii) an inference paradigm that is routed in predictive-performance and free of p-values or 95\% confidence intervals; and v) estimates that are slightly biased, but are more stable over multiple realizations of the data. Finally, I discuss some philosophical considerations to help practitioners motivate the use of either prediction-optimal methods (AIC, boosting) or model-consistent methods. The boosted capture-recapture framework is highly extensible and could provide a rich, unified framework for addressing many topics in capture-recapture, such as spatial capture-recapture, individual heterogeneity, and non-linear effects.},
 	URL = {http://dx.doi.org/10.1101/052266},
 	eprint = {http://www.biorxiv.org/content/early/2016/05/09/052266.full.pdf},
 	journal = {bioRxiv}
