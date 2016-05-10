@@ -1,6 +1,6 @@
-# HMMboost: machine-learning for capture-recapture
+# CJSboost: machine-learning for capture-recapture
 
-This repository contains a tutorial and code (R,C++) to accompany the publication ["EM and component-wise boosting for Hidden Markov Models: a machine-learning approach to capture-recapture", Robert W. Rankin (in review)](https://drive.google.com/open?id=0BxeoeRy1g2juWVl4Yk8yZ2J2V1E).  Interested users should study the preprint article [here](https://drive.google.com/open?id=0BxeoeRy1g2juWVl4Yk8yZ2J2V1E). If you wish to run the tutorial, see below for how to download the files and a summary of the kinds of analyses you can run. To dive straight into the tutorial, see the file `R_TUTORIAL_dipper.R`.
+This repository contains a tutorial and code (R,C++) to accompany the pre-print publication ["EM and component-wise boosting for Hidden Markov Models: a machine-learning approach to capture-recapture", Robert W. Rankin (2016), bioRxiv pre-print, doi:10.1101/052266](http://www.biorxiv.org/content/early/2016/05/09/052266).  Interested users should study the preprint article [here](http://www.biorxiv.org/content/early/2016/05/09/052266). If you wish to run the tutorial, see below for how to download the files and a summary of the kinds of analyses you can run. To dive straight into the tutorial, see the file `R_TUTORIAL_dipper.R`.
 
 ![foo_you](https://github.com/faraway1nspace/HMMboost/blob/master/img/ANIMATION_stabselect.gif)
 
@@ -8,7 +8,7 @@ _Demonstration of selection probabilities for 30 high-dimensional simulations. A
 ## Getting Started
 1. Download the CJSboost Github source code and dummy data
 2. Install dependencies (see below)
-3. Thoroughly read the [CJSboost manuscript](https://drive.google.com/open?id=0BxeoeRy1g2juWVl4Yk8yZ2J2V1E), as well as documentation about mboost's "base-learners" and the R formula-interface. CJSboost draws heavily on `mboost`. See ["Model-based Boosting in R: A Hands-on Tutorial Using the R Package mboost"](https://epub.ub.uni-muenchen.de/12754/).
+3. Thoroughly read the [CJSboost manuscript](http://www.biorxiv.org/content/early/2016/05/09/052266), as well as documentation about mboost's "base-learners" and the R formula-interface. CJSboost draws heavily on `mboost`. See ["Model-based Boosting in R: A Hands-on Tutorial Using the R Package mboost"](https://epub.ub.uni-muenchen.de/12754/).
 4. Make sure you can compile the source code `source("/path/to/HMMboost/R_CJSboost_SOURCE.R")`
 5. Step through the tutorial file `R_TUTORIAL_dipper.R`
 
